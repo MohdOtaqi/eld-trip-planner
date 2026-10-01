@@ -52,7 +52,7 @@ frontend/           React + TypeScript + Vite + Tailwind
 api/index.py        entry point for Vercel's Python runtime
 ```
 
-The backend is stateless, so there is no database. `POST /api/trips/plan` takes the three places, cycle hours and departure time and returns the whole plan. `GET /api/places?q=` powers the location autocomplete.
+The backend is stateless, so there is no database. `POST /api/trips/plan` takes the three places, cycle hours and departure time and returns the whole plan. `GET /api/places?q=` powers the location autocomplete from the bundled city list; adding `&addresses=1` searches streets and businesses through Photon.
 
 The planner walks the trip in 15-minute steps. Before each step it checks the clocks and, if driving is not allowed, inserts whatever stop clears the way: a rest, a break or fuel. Stop locations come from the route's own distance and time profile, so a rest at hour 11 lands where the truck would actually be.
 
@@ -91,7 +91,7 @@ One Vercel project serves both halves: the Vite build as static files and Django
 ## Data and services
 
 - Routing: [OSRM](https://project-osrm.org/) public server, with the FOSSGIS instance as a fallback
-- Place search: [Photon](https://photon.komoot.io/), falling back to the bundled city list if it is unreachable
+- Place search: cities come from the bundled list and show instantly; streets and addresses come from [Photon](https://photon.komoot.io/)
 - Map tiles: [OpenFreeMap](https://openfreemap.org/), © OpenStreetMap contributors
 - Town names: [GeoNames](https://www.geonames.org/) (CC BY 4.0)
 - Rules: FMCSA Interstate Truck Driver's Guide to Hours of Service (April 2022)

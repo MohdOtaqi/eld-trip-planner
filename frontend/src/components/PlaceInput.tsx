@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
-import { searchPlaces, type Place, type PlaceResult } from '../lib/api'
+import { searchAddresses, searchCities, type Place, type PlaceResult } from '../lib/api'
 
 export interface PlaceValue {
   text: string
@@ -15,33 +15,51 @@ interface Props {
   onChange: (value: PlaceValue) => void
 }
 
+interface Lookup {
+  query: string
+  places: PlaceResult[]
+}
+
+const none: Lookup = { query: '', places: [] }
+const MAX_SUGGESTIONS = 7
+
+const samePlace = (a: PlaceResult, b: PlaceResult) =>
+  a.name === b.name && Math.abs(a.lat - b.lat) < 0.3 && Math.abs(a.lng - b.lng) < 0.3
+
 export function PlaceInput({ label, placeholder, marker, value, error, onChange }: Props) {
   const id = useId()
-  const [found, setFound] = useState<PlaceResult[]>([])
+  const [cities, setCities] = useState(none)
+  const [addresses, setAddresses] = useState(none)
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(0)
   const blurTimer = useRef<number>(undefined)
 
   const query = value.place ? '' : value.text.trim()
 
-  const results = query.length < 2 ? [] : found
-
+  // Cities come from the server's own list and show at once. Addresses come from a public
+  // geocoder that can take a few seconds, so they are added underneath when they arrive.
   useEffect(() => {
     if (query.length < 2) return
     const controller = new AbortController()
-    const timer = window.setTimeout(() => {
-      searchPlaces(query, controller.signal)
-        .then((places) => {
-          setFound(places)
-          setActive(0)
-        })
-        .catch(() => {})
-    }, 250)
+    const lookup = (search: typeof searchCities, store: (found: Lookup) => void, delay: number) =>
+      window.setTimeout(() => {
+        search(query, controller.signal)
+          .then((places) => store({ query, places }))
+          .catch(() => {})
+      }, delay)
+    const timers = [lookup(searchCities, setCities, 80), lookup(searchAddresses, setAddresses, 400)]
     return () => {
-      window.clearTimeout(timer)
+      timers.forEach(window.clearTimeout)
       controller.abort()
     }
   }, [query])
+
+  const current = (found: Lookup) => (found.query === query ? found.places : [])
+  const matched = current(cities)
+  const results = [
+    ...matched,
+    ...current(addresses).filter((place) => !matched.some((city) => samePlace(city, place))),
+  ].slice(0, MAX_SUGGESTIONS)
 
   const choose = (result: PlaceResult) => {
     onChange({ text: result.label, place: { label: result.label, lat: result.lat, lng: result.lng } })
@@ -58,7 +76,7 @@ export function PlaceInput({ label, placeholder, marker, value, error, onChange 
       setActive((i) => (i - 1 + results.length) % results.length)
     } else if (event.key === 'Enter') {
       event.preventDefault()
-      choose(results[active])
+      choose(results[Math.min(active, results.length - 1)])
     } else if (event.key === 'Escape') {
       setOpen(false)
     }
@@ -86,6 +104,7 @@ export function PlaceInput({ label, placeholder, marker, value, error, onChange 
           value={value.text}
           onChange={(event) => {
             onChange({ text: event.target.value, place: null })
+            setActive(0)
             setOpen(true)
           }}
           onFocus={() => setOpen(true)}
@@ -116,7 +135,7 @@ export function PlaceInput({ label, placeholder, marker, value, error, onChange 
           >
             {results.map((result, i) => (
               <li
-                key={result.label}
+                key={`${result.label}:${result.lat}`}
                 id={`${id}-option-${i}`}
                 role="option"
                 aria-selected={i === active}

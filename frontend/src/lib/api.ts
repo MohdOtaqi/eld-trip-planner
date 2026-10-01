@@ -109,11 +109,19 @@ async function readError(response: Response) {
   return 'Something went wrong while planning the trip. Try again in a moment.'
 }
 
-export async function searchPlaces(query: string, signal?: AbortSignal): Promise<PlaceResult[]> {
-  const response = await fetch(`/api/places?q=${encodeURIComponent(query)}`, { signal })
+async function getPlaces(url: string, signal?: AbortSignal): Promise<PlaceResult[]> {
+  const response = await fetch(url, { signal })
   if (!response.ok) throw new Error(await readError(response))
   return response.json()
 }
+
+/** Cities from the server's own list. Fast enough to call on every keystroke. */
+export const searchCities = (query: string, signal?: AbortSignal) =>
+  getPlaces(`/api/places?q=${encodeURIComponent(query)}`, signal)
+
+/** Streets, addresses and businesses. Goes through a public geocoder, so it can take seconds. */
+export const searchAddresses = (query: string, signal?: AbortSignal) =>
+  getPlaces(`/api/places?q=${encodeURIComponent(query)}&addresses=1`, signal)
 
 export async function planTrip(request: TripRequest): Promise<TripPlan> {
   const response = await fetch('/api/trips/plan', {

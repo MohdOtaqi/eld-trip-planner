@@ -1,6 +1,6 @@
 import { Flag, LoaderCircle, MapPin, Package } from 'lucide-react'
 import { useId, useState, type FormEvent } from 'react'
-import { searchPlaces, type Place, type TripRequest } from '../lib/api'
+import { searchAddresses, searchCities, type Place, type TripRequest } from '../lib/api'
 import { nextQuarterHour } from '../lib/format'
 import { PlaceInput, type PlaceValue } from './PlaceInput'
 
@@ -15,9 +15,9 @@ const FIELDS = [
 type FieldKey = (typeof FIELDS)[number]['key']
 
 const EXAMPLE: Record<FieldKey, Place> = {
-  current: { label: 'Chicago, Illinois', lat: 41.8756, lng: -87.6244 },
-  pickup: { label: 'Dallas, Texas', lat: 32.7763, lng: -96.7969 },
-  dropoff: { label: 'Los Angeles, California', lat: 34.0537, lng: -118.2428 },
+  current: { label: 'Chicago, IL', lat: 41.85, lng: -87.65 },
+  pickup: { label: 'Dallas, TX', lat: 32.7831, lng: -96.8067 },
+  dropoff: { label: 'Los Angeles, CA', lat: 34.0522, lng: -118.2437 },
 }
 
 const empty: PlaceValue = { text: '', place: null }
@@ -65,7 +65,9 @@ export function TripForm({ busy, error, onPlan }: Props) {
     if (place) return place
     if (!text.trim()) return 'Enter a location.'
     try {
-      const [match] = await searchPlaces(text.trim())
+      const query = text.trim()
+      const cities = await searchCities(query)
+      const [match] = cities.length ? cities : await searchAddresses(query)
       if (!match) return 'No place found with that name.'
       const found = { label: match.label, lat: match.lat, lng: match.lng }
       setPlace(key, { text: match.label, place: found })
