@@ -1,6 +1,7 @@
 import csv
 from collections import defaultdict
 from functools import lru_cache
+from itertools import islice
 from pathlib import Path
 from typing import NamedTuple
 
@@ -26,8 +27,18 @@ class City(NamedTuple):
         return f"{self.name}, {self.region}"
 
 
-def search(query, limit=6):
-    """Suggest places for the search box, from Photon or the bundled city list if it is down."""
+def search_cities(query, limit=6):
+    """Cities starting with the query: US and Canada before Mexico, largest first. No network."""
+    prefix = _search_key(query)
+    matches = (city for key, city in _cities_by_size() if key.startswith(prefix))
+    return [
+        {"label": c.label, "name": c.name, "detail": c.region, "lat": c.lat, "lng": c.lng}
+        for c in islice(matches, limit)
+    ]
+
+
+def search_addresses(query, limit=6):
+    """Streets, addresses and businesses from Photon. Slower, and empty if Photon is unreachable."""
     params = {"q": query, "limit": limit + 4, "lang": "en", "bbox": NORTH_AMERICA}
     headers = {"User-Agent": settings.HTTP_USER_AGENT}
     try:
@@ -35,7 +46,7 @@ def search(query, limit=6):
         response.raise_for_status()
         features = response.json()["features"]
     except (requests.RequestException, ValueError, KeyError):
-        return _search_cities(query, limit)
+        return []
 
     results = {}
     for feature in features:
@@ -62,14 +73,14 @@ def _describe(props):
     return name, ", ".join(detail) or props.get("country", "")
 
 
-def _search_cities(query, limit):
-    prefix = query.casefold()
-    matches = [city for city in _cities() if city.label.casefold().startswith(prefix)]
-    matches.sort(key=lambda city: -city.population)
-    return [
-        {"label": c.label, "name": c.name, "detail": c.region, "lat": c.lat, "lng": c.lng}
-        for c in matches[:limit]
-    ]
+def _search_key(text):
+    return " ".join(text.casefold().replace(",", " ").replace(".", "").split())
+
+
+@lru_cache(maxsize=1)
+def _cities_by_size():
+    ranked = sorted(_cities(), key=lambda city: (city.region == "MX", -city.population))
+    return [(_search_key(city.label), city) for city in ranked]
 
 
 @lru_cache(maxsize=1)

@@ -2,7 +2,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .places import search
+from .places import search_addresses, search_cities
 from .routing import NoRouteError, RoutingError
 from .serializers import TripRequestSerializer
 from .trips import plan_trip
@@ -11,7 +11,11 @@ from .trips import plan_trip
 class PlaceSearchView(APIView):
     def get(self, request):
         query = request.query_params.get("q", "").strip()
-        return Response(search(query) if len(query) >= 2 else [])
+        if len(query) < 2:
+            return Response([])
+        if "addresses" in request.query_params:
+            return Response(search_addresses(query))
+        return Response(search_cities(query))
 
 
 class PlanTripView(APIView):

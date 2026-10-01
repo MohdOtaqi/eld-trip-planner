@@ -84,7 +84,7 @@ class PlaceSearchApiTests(SimpleTestCase):
             },
         }
         get.return_value.json.return_value = {"features": [feature, feature]}
-        results = self.client.get("/api/places", {"q": "chicago"}).json()
+        results = self.client.get("/api/places", {"q": "chicago", "addresses": 1}).json()
         self.assertEqual(
             results,
             [
@@ -99,8 +99,22 @@ class PlaceSearchApiTests(SimpleTestCase):
         )
 
     @patch("planner.places.requests.get", side_effect=requests.ConnectionError)
-    def test_falls_back_to_the_city_list_when_photon_is_down(self, _):
+    def test_address_search_is_empty_when_photon_is_down(self, _):
+        self.assertEqual(self.client.get("/api/places", {"q": "dallas", "addresses": 1}).json(), [])
+
+    @patch("planner.places.requests.get", side_effect=AssertionError("city search must stay local"))
+    def test_city_search_puts_the_largest_match_first(self, _):
         results = self.client.get("/api/places", {"q": "dallas"}).json()
         self.assertEqual(results[0]["label"], "Dallas, TX")
         self.assertAlmostEqual(results[0]["lat"], 32.78, places=1)
         self.assertTrue(all(place["name"].startswith("Dallas") for place in results))
+
+    def test_city_search_ignores_case_and_punctuation(self):
+        for query, label in [
+            ("los angeles ca", "Los Angeles, CA"),
+            ("LOS ANGELES,  ca", "Los Angeles, CA"),
+            ("st louis mo", "St. Louis, MO"),
+        ]:
+            with self.subTest(query=query):
+                results = self.client.get("/api/places", {"q": query}).json()
+                self.assertEqual(results[0]["label"], label)
