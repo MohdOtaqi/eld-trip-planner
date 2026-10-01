@@ -1,0 +1,105 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Overpass', ui-sans-serif, system-ui, sans-serif;
+  --font-hand: 'Patrick Hand', 'Comic Sans MS', cursive;
+
+  --color-asphalt-950: #0d131d;
+  --color-asphalt-900: #151c2a;
+  --color-asphalt-800: #1e2738;
+  --color-asphalt-700: #2c374b;
+  --color-asphalt-500: #5d6b84;
+  --color-asphalt-300: #a6b1c5;
+  --color-asphalt-100: #e6eaf2;
+
+  --color-paper: #fbfbf8;
+  --color-rule: #d8d6cb;
+  --color-print: #1b1b1b;
+  --color-pencil: #6a6960;
+  --color-ink: #2148c0;
+  --color-ink-dark: #18358f;
+  --color-lane: #f6c744;
+  --color-stop: #c8372d;
+
+  --color-off-duty: #93a0b5;
+  --color-sleeper: #8779f2;
+  --color-driving: #1fa774;
+  --color-on-duty: #f0a93b;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--color-asphalt-900);
+  color: var(--color-asphalt-100);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+}
+
+.on-dark :focus-visible {
+  outline-color: var(--color-lane);
+}
+
+.maplibregl-map {
+  font-family: var(--font-sans);
+}
+
+.maplibregl-popup-content {
+  padding: 0;
+  border-radius: 6px;
+  background: var(--color-paper);
+  color: var(--color-print);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.45);
+}
+
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
+  border-top-color: var(--color-paper);
+}
+
+.maplibregl-popup-anchor-top .maplibregl-popup-tip {
+  border-bottom-color: var(--color-paper);
+}
+
+.maplibregl-popup-anchor-left .maplibregl-popup-tip {
+  border-right-color: var(--color-paper);
+}
+
+.maplibregl-popup-anchor-right .maplibregl-popup-tip {
+  border-left-color: var(--color-paper);
+}
+
+.maplibregl-popup-close-button {
+  width: 28px;
+  height: 28px;
+  font-size: 18px;
+  color: var(--color-pencil);
+}
+
+.maplibregl-ctrl-attrib {
+  font-size: 11px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+@page {
+  size: letter landscape;
+  margin: 0.35in;
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+}
