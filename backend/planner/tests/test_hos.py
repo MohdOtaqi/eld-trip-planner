@@ -95,6 +95,15 @@ class TripPlannerTests(SimpleTestCase):
         rest = next(e for e in planner.events if e.kind == "rest")
         self.assertEqual(rest.start, DEPARTURE + timedelta(hours=8))
 
+    def test_clocks_run_down_and_reset(self):
+        events = plan(0, 720)
+        first_drive, short_break, second_drive, rest, pre_trip = events[2:7]
+        self.assertEqual(first_drive.clocks, {"break": 480, "drive": 660, "shift": 750, "cycle": 4110})
+        self.assertEqual(short_break.clocks["break"], 0)
+        self.assertEqual(second_drive.clocks["break"], 480)
+        self.assertEqual(rest.clocks["drive"], 0)
+        self.assertEqual(pre_trip.clocks, {"break": 480, "drive": 660, "shift": 840, "cycle": 3450})
+
     def test_fuel_at_least_every_thousand_miles(self):
         events = plan(100, 2400)
         fuel_stops = [e for e in events if e.kind == "fuel"]

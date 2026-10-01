@@ -15,7 +15,8 @@ def plan_trip(current, pickup, dropoff, cycle_used, departure=None):
     departure = _round_up(departure or datetime.now())
     cycle_minutes = math.ceil(cycle_used * 60 / hos.TICK) * hos.TICK
 
-    events = hos.TripPlanner(to_pickup, to_dropoff, departure, cycle_minutes).plan()
+    planner = hos.TripPlanner(to_pickup, to_dropoff, departure, cycle_minutes)
+    events = planner.plan()
     for event in events:
         event.place = nearest_city(event.lat, event.lng)
 
@@ -46,6 +47,7 @@ def plan_trip(current, pickup, dropoff, cycle_used, departure=None):
         "places": {"current": current, "pickup": pickup, "dropoff": dropoff},
         "events": [_serialize(event) for event in _join_drives(events)],
         "stops": _group_stops(events),
+        "clocks_at_arrival": planner.clocks(),
         "logs": build_daily_logs(events, cycle_minutes),
     }
 
@@ -93,6 +95,7 @@ def _serialize(event):
         "lng": round(event.lng, 5),
         "odometer": round(event.odometer, 1),
         "miles": round(event.miles, 1),
+        "clocks": event.clocks,
     }
 
 

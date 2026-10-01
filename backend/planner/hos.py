@@ -5,7 +5,7 @@ so every duty change lands on a grid line. All durations are in minutes.
 """
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, time, timedelta
 
 OFF_DUTY = "off_duty"
@@ -41,6 +41,7 @@ class Event:
     odometer: float
     miles: float = 0.0
     place: str = ""
+    clocks: dict = field(default_factory=dict)
 
     @property
     def minutes(self):
@@ -70,6 +71,16 @@ class TripPlanner:
         self._stop("dropoff", ON_DUTY, DROPOFF)
         return self.events
 
+    def clocks(self):
+        """Minutes left before each limit stops the driver from driving."""
+        window_used = (self.now - self.shift_start).total_seconds() / 60
+        return {
+            "break": DRIVING_BEFORE_BREAK - self.since_break,
+            "drive": MAX_DRIVING - self.shift_driving,
+            "shift": max(DUTY_WINDOW - window_used, 0),
+            "cycle": max(CYCLE_LIMIT - self.cycle, 0),
+        }
+
     def _drive(self, leg):
         ticks = math.ceil(leg.total_minutes / TICK)
         start = self.odometer
@@ -97,6 +108,7 @@ class TripPlanner:
 
     def _drive_tick(self, lat, lng, odometer):
         start = self.now
+        clocks = self.clocks()
         self.now += timedelta(minutes=TICK)
         miles = odometer - self.odometer
         last = self.events[-1]
@@ -106,7 +118,7 @@ class TripPlanner:
             last.miles += miles
         else:
             self.events.append(
-                Event("drive", DRIVING, start, self.now, self.lat, self.lng, self.odometer, miles)
+                Event("drive", DRIVING, start, self.now, self.lat, self.lng, self.odometer, miles, clocks=clocks)
             )
         self.lat, self.lng, self.odometer = lat, lng, odometer
         self.cycle += TICK
@@ -115,8 +127,11 @@ class TripPlanner:
 
     def _stop(self, kind, status, minutes):
         start = self.now
+        clocks = self.clocks()
         self.now += timedelta(minutes=minutes)
-        self.events.append(Event(kind, status, start, self.now, self.lat, self.lng, self.odometer))
+        self.events.append(
+            Event(kind, status, start, self.now, self.lat, self.lng, self.odometer, clocks=clocks)
+        )
         if status == ON_DUTY:
             self.cycle += minutes
         # Every stop lasts at least 30 minutes, so it also counts as the driving break.
