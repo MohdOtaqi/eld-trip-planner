@@ -91,14 +91,10 @@ class TripPlanner:
 
     def _wait_until_legal(self, next_odometer):
         while True:
-            window_used = (self.now - self.shift_start).total_seconds() / 60
-            if (
-                self.cycle >= CYCLE_LIMIT
-                or self.shift_driving >= MAX_DRIVING
-                or window_used >= DUTY_WINDOW
-            ):
+            left = self.clocks()
+            if min(left["drive"], left["shift"], left["cycle"]) <= 0:
                 self._rest()
-            elif self.since_break >= DRIVING_BEFORE_BREAK:
+            elif left["break"] <= 0:
                 self._stop("break", OFF_DUTY, BREAK)
             elif next_odometer - self.last_fuel > FUEL_RANGE_MILES:
                 self._stop("fuel", ON_DUTY, FUEL_STOP)
