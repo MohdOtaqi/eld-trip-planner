@@ -20,7 +20,7 @@ interface KindInfo {
 
 export const KINDS: Record<EventKind, KindInfo> = {
   drive: { label: 'Drive', remark: 'Driving', icon: Truck },
-  pre_trip: { label: 'Pre-trip inspection', remark: 'Pre-trip inspection', icon: ClipboardCheck },
+  pre_trip: { label: 'Pre-trip inspection', remark: 'Pre-trip', icon: ClipboardCheck },
   pickup: { label: 'Pickup', remark: 'Pickup', icon: Package },
   dropoff: { label: 'Drop-off', remark: 'Drop-off', icon: Flag },
   fuel: { label: 'Fuel stop', remark: 'Fuel', icon: Fuel },

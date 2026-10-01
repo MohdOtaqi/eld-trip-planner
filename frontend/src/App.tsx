@@ -107,13 +107,12 @@ export default function App() {
                 <li>A 30-minute break once 8 hours of driving have built up.</li>
                 <li>70 on-duty hours in 8 days. When they run out, a 34-hour restart.</li>
                 <li>Fuel at least every 1,000 miles, 30 minutes on duty.</li>
-                <li>1 hour on duty at pickup and at drop-off, and a 30-minute pre-trip inspection each day.</li>
+                <li>1 hour on duty at pickup and at drop-off, and a 30-minute pre-trip inspection each shift.</li>
                 <li>Times are rounded to 15 minutes, the resolution of the paper log grid.</li>
               </ul>
             </details>
           </div>
         </aside>
-
       </div>
 
       {plan && <LogBook logs={plan.logs} />}

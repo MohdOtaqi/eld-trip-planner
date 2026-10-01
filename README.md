@@ -77,11 +77,11 @@ npm run dev
 
 Open http://localhost:5173. The dev server proxies `/api` to Django on port 8000.
 
-Tests:
+Tests and linting:
 
 ```bash
-cd backend
-python manage.py test
+cd backend && python manage.py test && ruff check .
+cd frontend && npm run lint
 ```
 
 ## Deployment
@@ -91,7 +91,7 @@ One Vercel project serves both halves: the Vite build as static files and Django
 ## Data and services
 
 - Routing: [OSRM](https://project-osrm.org/) public server, with the FOSSGIS instance as a fallback
-- Place search: [Photon](https://photon.komoot.io/)
+- Place search: [Photon](https://photon.komoot.io/), falling back to the bundled city list if it is unreachable
 - Map tiles: [OpenFreeMap](https://openfreemap.org/), © OpenStreetMap contributors
 - Town names: [GeoNames](https://www.geonames.org/) (CC BY 4.0)
 - Rules: FMCSA Interstate Truck Driver's Guide to Hours of Service (April 2022)
