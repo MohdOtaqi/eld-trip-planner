@@ -3,9 +3,9 @@ const day = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short',
 const date = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' })
 const miles = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
 
-export const formatTime = (iso: string) => time.format(new Date(iso))
-export const formatDay = (iso: string) => day.format(new Date(iso))
-export const formatDate = (iso: string) => date.format(new Date(iso))
+export const formatTime = (value: string | Date) => time.format(new Date(value))
+export const formatDay = (value: string | Date) => day.format(new Date(value))
+export const formatDate = (value: string | Date) => date.format(new Date(value))
 export const formatMiles = (value: number) => miles.format(value)
 
 export function formatDuration(minutes: number) {

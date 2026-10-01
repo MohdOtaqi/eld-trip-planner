@@ -13,6 +13,13 @@ export interface PlaceResult extends Place {
   detail: string
 }
 
+export interface Clocks {
+  break: number
+  drive: number
+  shift: number
+  cycle: number
+}
+
 export interface TripEvent {
   kind: EventKind
   status: Status
@@ -24,6 +31,7 @@ export interface TripEvent {
   lng: number
   odometer: number
   miles: number
+  clocks: Clocks
 }
 
 export interface Stop {
@@ -79,6 +87,7 @@ export interface TripPlan {
   places: { current: Place; pickup: Place; dropoff: Place }
   events: TripEvent[]
   stops: Stop[]
+  clocks_at_arrival: Clocks
   logs: DailyLog[]
 }
 

@@ -87,6 +87,37 @@ body {
   font-size: 11px;
 }
 
+/* Keep the map attribution clear of the replay bar. */
+@media (min-width: 1024px) {
+  .replay-open .maplibregl-ctrl-bottom-right {
+    bottom: 132px;
+  }
+}
+
+.scrubber {
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.scrubber::-webkit-slider-thumb {
+  appearance: none;
+  width: 8px;
+  height: 20px;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 1px 6px rgb(0 0 0 / 0.6);
+}
+
+.scrubber::-moz-range-thumb {
+  width: 8px;
+  height: 20px;
+  border: 0;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 1px 6px rgb(0 0 0 / 0.6);
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

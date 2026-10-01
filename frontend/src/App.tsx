@@ -1,18 +1,15 @@
 import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
-import { ChevronDown } from 'lucide-react'
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { GridPreview } from './components/GridPreview'
 import { Itinerary } from './components/Itinerary'
 import { LogBook } from './components/LogBook'
+import { MapStage } from './components/MapStage'
 import { TripForm } from './components/TripForm'
 import { TripSummary } from './components/TripSummary'
 import { planTrip, type TripPlan, type TripRequest } from './lib/api'
 
-const RouteMap = lazy(() => import('./components/RouteMap'))
-
 const DESKTOP = '(min-width: 1024px)'
-const PANEL_WIDTH = 440
 
 export default function App() {
   const panel = useRef<HTMLElement>(null)
@@ -60,16 +57,7 @@ export default function App() {
   return (
     <main>
       <div className="relative flex flex-col lg:block lg:h-dvh print:hidden">
-        <div className="isolate h-[46dvh] lg:absolute lg:inset-0 lg:h-auto">
-          <Suspense fallback={<div className="size-full bg-asphalt-950" />}>
-            <RouteMap
-              plan={plan}
-              selected={selected}
-              onSelect={setSelected}
-              leftInset={desktop ? PANEL_WIDTH + 16 : 0}
-            />
-          </Suspense>
-        </div>
+        <MapStage plan={plan} selected={selected} onSelect={setSelected} desktop={desktop} />
 
         <aside
           ref={panel}
@@ -126,15 +114,6 @@ export default function App() {
           </div>
         </aside>
 
-        {plan && desktop && (
-          <a
-            href="#logs"
-            className="absolute bottom-5 left-[calc(50%+228px)] flex -translate-x-1/2 items-center gap-2 rounded-full bg-lane py-2.5 pl-5 pr-4 text-sm font-bold text-asphalt-950 shadow-xl shadow-black/40 hover:brightness-105"
-          >
-            Daily logs, {plan.logs.length} {plan.logs.length === 1 ? 'sheet' : 'sheets'}
-            <ChevronDown size={18} strokeWidth={2.6} />
-          </a>
-        )}
       </div>
 
       {plan && <LogBook logs={plan.logs} />}

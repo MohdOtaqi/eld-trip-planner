@@ -1,12 +1,13 @@
 import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
+import { Truck } from 'lucide-react'
 import maplibregl, { type ExpressionSpecification, type GeoJSONSource } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { Stop, TripPlan } from '../lib/api'
 import { formatDay, formatMiles, formatTime } from '../lib/format'
-import { decodePolyline } from '../lib/polyline'
+import { decodePolyline, measureRoute, pointAt } from '../lib/polyline'
 import { describeStop } from '../lib/stops'
 
 const STYLE = 'https://tiles.openfreemap.org/styles/dark'
@@ -50,6 +51,7 @@ interface Props {
   plan: TripPlan | null
   selected: number | null
   onSelect: (index: number | null) => void
+  odometer: number
   leftInset: number
 }
 
@@ -67,11 +69,17 @@ const revealed = (progress: number): ExpressionSpecification => [
   'rgba(246, 199, 68, 0)',
 ]
 
-export default function RouteMap({ plan, selected, onSelect, leftInset }: Props) {
+export default function RouteMap({ plan, selected, onSelect, odometer, leftInset }: Props) {
   const container = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const [ready, setReady] = useState(false)
   const [pins, setPins] = useState<Pin[]>([])
+  const truck = useRef<maplibregl.Marker | null>(null)
+  const [truckNode, setTruckNode] = useState<HTMLDivElement | null>(null)
+  const route = useMemo(
+    () => plan && measureRoute(decodePolyline(plan.route.polyline), plan.summary.distance_miles),
+    [plan],
+  )
   const popupNode = useMemo(() => document.createElement('div'), [])
   const reducedMotion = useMemo(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches, [])
 
@@ -165,9 +173,9 @@ export default function RouteMap({ plan, selected, onSelect, leftInset }: Props)
 
   useEffect(() => {
     const map = mapRef.current
-    if (!map || !ready || !plan) return
+    if (!map || !ready || !plan || !route) return
 
-    const coordinates = decodePolyline(plan.route.polyline)
+    const { coordinates } = route
     const source = map.getSource<GeoJSONSource>('route')!
     source.setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates } })
 
@@ -176,7 +184,7 @@ export default function RouteMap({ plan, selected, onSelect, leftInset }: Props)
       new maplibregl.LngLatBounds(coordinates[0], coordinates[0]),
     )
     map.fitBounds(bounds, {
-      padding: { top: 90, bottom: 110, left: 70, right: 70 },
+      padding: leftInset ? { top: 80, bottom: 170, left: 70, right: 70 } : 44,
       duration: reducedMotion ? 0 : 2200,
       maxZoom: 11,
     })
@@ -194,12 +202,26 @@ export default function RouteMap({ plan, selected, onSelect, leftInset }: Props)
     })
     setPins(markers.map((m) => m.pin))
 
+    const truckElement = document.createElement('div')
+    truckElement.style.zIndex = '3'
+    truck.current = new maplibregl.Marker({ element: truckElement }).setLngLat(coordinates[0]).addTo(map)
+    setTruckNode(truckElement)
+
     return () => {
       tween.kill()
       markers.forEach((m) => m.marker.remove())
+      truck.current?.remove()
+      truck.current = null
       setPins([])
+      setTruckNode(null)
     }
-  }, [ready, plan, reducedMotion])
+    // leftInset is read once per trip, to frame the route
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, plan, route, reducedMotion])
+
+  useEffect(() => {
+    if (route && truckNode) truck.current?.setLngLat(pointAt(route, odometer))
+  }, [route, truckNode, odometer])
 
   useGSAP(
     () => {
@@ -254,6 +276,13 @@ export default function RouteMap({ plan, selected, onSelect, leftInset }: Props)
         ),
       )}
       {stop && createPortal(<StopCard stop={stop} index={selected!} />, popupNode)}
+      {truckNode &&
+        createPortal(
+          <span className="stop-pin grid size-8 place-items-center rounded-full border-2 border-asphalt-950 bg-lane text-asphalt-950 shadow-lg shadow-black/60">
+            <Truck size={16} strokeWidth={2.4} />
+          </span>,
+          truckNode,
+        )}
     </div>
   )
 }
