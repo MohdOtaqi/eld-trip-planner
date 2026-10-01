@@ -263,7 +263,7 @@ export function LogSheet({ log, details, play }: Props) {
                   {remark.place}
                 </Hand>
                 <Hand x={2} y={15} size={14}>
-                  {remark.kinds.map((kind) => KINDS[kind].remark).join(', ')}
+                  {remark.kinds.map((kind, n) => (n ? KINDS[kind].remark.toLowerCase() : KINDS[kind].remark)).join(', ')}
                 </Hand>
               </g>
             </g>

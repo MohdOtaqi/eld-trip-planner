@@ -91,14 +91,9 @@ export default function RouteMap({ plan, selected, onSelect, odometer, leftInset
       zoom: container.current!.clientHeight < 520 ? 1.4 : 2.6,
       attributionControl: { compact: true },
     })
-    map.setPadding({ left: leftInset, top: 0, right: 0, bottom: 0 })
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right')
     map.on('styleimagemissing', ({ id }) => {
       if (!map.hasImage(id)) map.addImage(id, { width: 1, height: 1, data: new Uint8Array(4) })
-    })
-    // A pin click reaches the map too, so popups are closed here instead of by closeOnClick.
-    map.on('click', (event) => {
-      if (!(event.originalEvent.target as HTMLElement).closest('.stop-pin')) onSelect(null)
     })
     map.on('style.load', () => {
       map.setProjection({ type: 'globe' })
@@ -142,13 +137,24 @@ export default function RouteMap({ plan, selected, onSelect, odometer, leftInset
       map.remove()
       mapRef.current = null
     }
-    // created once; later inset changes are applied in the next effect
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
     mapRef.current?.setPadding({ left: leftInset, top: 0, right: 0, bottom: 0 })
   }, [leftInset])
+
+  // A pin click reaches the map too, so popups are closed here instead of by closeOnClick.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    const close = (event: maplibregl.MapMouseEvent) => {
+      if (!(event.originalEvent.target as HTMLElement).closest('.stop-pin')) onSelect(null)
+    }
+    map.on('click', close)
+    return () => {
+      map.off('click', close)
+    }
+  }, [onSelect])
 
   // Slowly turn the globe until there is a trip to show or the user takes over.
   useEffect(() => {
@@ -215,9 +221,7 @@ export default function RouteMap({ plan, selected, onSelect, odometer, leftInset
       setPins([])
       setTruckNode(null)
     }
-    // leftInset is read once per trip, to frame the route
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, plan, route, reducedMotion])
+  }, [ready, plan, route, reducedMotion, leftInset])
 
   useEffect(() => {
     if (route && truckNode) truck.current?.setLngLat(pointAt(route, odometer))
@@ -259,8 +263,7 @@ export default function RouteMap({ plan, selected, onSelect, odometer, leftInset
       popup.off('close', onClose)
       popup.remove()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stop])
+  }, [stop, onSelect, popupNode, reducedMotion])
 
   return (
     <div

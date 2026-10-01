@@ -13,10 +13,12 @@ export function momentAt(plan: TripPlan, minute: number) {
   const start = Date.parse(event.start)
   const fraction = Math.min(Math.max((at - start) / (Date.parse(event.end) - start), 0), 1)
 
-  // Clocks are recorded at the start of each event; in between they run down (or refill) evenly.
+  // Clocks are recorded at the start of each event and run down evenly in between.
+  // One that resets at the end of a stop gives no partial credit, so it holds until then.
   const from = event.clocks
   const to = next?.clocks ?? plan.clocks_at_arrival
-  const blend = (key: keyof Clocks) => from[key] + (to[key] - from[key]) * fraction
+  const blend = (key: keyof Clocks) =>
+    to[key] > from[key] ? from[key] : from[key] + (to[key] - from[key]) * fraction
 
   return {
     event,
