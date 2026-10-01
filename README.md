@@ -2,7 +2,7 @@
 
 Trip planner for truck drivers. Enter where the truck is, the pickup, the drop-off and the hours already used in the current cycle. It returns the route, every stop the hours-of-service rules require, and a filled-in Driver's Daily Log for each day of the trip.
 
-Live: _link goes here once deployed_
+Live: https://driveline-eld.vercel.app
 
 ![Route with stops and trip replay](docs/route.png)
 ![Daily log sheet](docs/logs.png)
