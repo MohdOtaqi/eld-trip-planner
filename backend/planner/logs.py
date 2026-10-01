@@ -22,24 +22,15 @@ def build_daily_logs(events, cycle_used):
         miles = 0.0
         origin = destination = None
 
-        def add_entry(status, start, end):
-            if end <= start:
-                return
-            totals[status] += end - start
-            if entries and entries[-1]["status"] == status:
-                entries[-1]["end"] = end
-            else:
-                entries.append({"status": status, "start": start, "end": end})
-
         if day == first:
-            add_entry(OFF_DUTY, 0, _minute_of_day(events[0].start, day_start))
+            _add_entry(entries, totals, OFF_DUTY, 0, _minute_of_day(events[0].start, day_start))
 
         for i, event in enumerate(events):
             if event.end <= day_start or event.start >= day_end:
                 continue
             start = _minute_of_day(max(event.start, day_start), day_start)
             end = _minute_of_day(min(event.end, day_end), day_start)
-            add_entry(event.status, start, end)
+            _add_entry(entries, totals, event.status, start, end)
 
             origin = origin or event.place
             destination = event.place
@@ -58,10 +49,12 @@ def build_daily_logs(events, cycle_used):
                 remarks[-1]["end"] = end
                 remarks[-1]["kinds"].append(event.kind)
             else:
-                remarks.append({"start": start, "end": end, "place": event.place, "kinds": [event.kind]})
+                remarks.append(
+                    {"start": start, "end": end, "place": event.place, "kinds": [event.kind]}
+                )
 
         if day == last:
-            add_entry(OFF_DUTY, entries[-1]["end"], DAY)
+            _add_entry(entries, totals, OFF_DUTY, entries[-1]["end"], DAY)
 
         logs.append(
             {
@@ -81,6 +74,17 @@ def build_daily_logs(events, cycle_used):
         )
 
     return logs
+
+
+def _add_entry(entries, totals, status, start, end):
+    """Extend the day's graph line, merging with the previous entry when the status is the same."""
+    if end <= start:
+        return
+    totals[status] += end - start
+    if entries and entries[-1]["status"] == status:
+        entries[-1]["end"] = end
+    else:
+        entries.append({"status": status, "start": start, "end": end})
 
 
 def _minute_of_day(moment, day_start):

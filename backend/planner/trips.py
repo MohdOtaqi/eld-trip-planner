@@ -40,7 +40,10 @@ def plan_trip(current, pickup, dropoff, cycle_used, departure=None):
         "route": {
             "polyline": route.polyline,
             "legs": [
-                {"distance_miles": round(leg.total_miles, 1), "duration_minutes": round(leg.total_minutes)}
+                {
+                    "distance_miles": round(leg.total_miles, 1),
+                    "duration_minutes": round(leg.total_minutes),
+                }
                 for leg in route.legs
             ],
         },

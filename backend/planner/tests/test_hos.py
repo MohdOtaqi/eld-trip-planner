@@ -67,7 +67,9 @@ class TripPlannerTests(SimpleTestCase):
 
     def test_break_after_eight_hours_of_driving(self):
         events = plan(0, 600)
-        self.assertEqual(kinds(events), ["pre_trip", "pickup", "drive", "break", "drive", "dropoff"])
+        self.assertEqual(
+            kinds(events), ["pre_trip", "pickup", "drive", "break", "drive", "dropoff"]
+        )
         self.assertEqual(events[2].minutes, 480)
         self.assertEqual(events[3].status, hos.OFF_DUTY)
 
@@ -79,7 +81,17 @@ class TripPlannerTests(SimpleTestCase):
         events = plan(0, 720)
         self.assertEqual(
             kinds(events),
-            ["pre_trip", "pickup", "drive", "break", "drive", "rest", "pre_trip", "drive", "dropoff"],
+            [
+                "pre_trip",
+                "pickup",
+                "drive",
+                "break",
+                "drive",
+                "rest",
+                "pre_trip",
+                "drive",
+                "dropoff",
+            ],
         )
         rest = events[5]
         self.assertEqual(rest.status, hos.SLEEPER)
@@ -98,7 +110,9 @@ class TripPlannerTests(SimpleTestCase):
     def test_clocks_run_down_and_reset(self):
         events = plan(0, 720)
         first_drive, short_break, second_drive, rest, pre_trip = events[2:7]
-        self.assertEqual(first_drive.clocks, {"break": 480, "drive": 660, "shift": 750, "cycle": 4110})
+        self.assertEqual(
+            first_drive.clocks, {"break": 480, "drive": 660, "shift": 750, "cycle": 4110}
+        )
         self.assertEqual(short_break.clocks["break"], 0)
         self.assertEqual(second_drive.clocks["break"], 480)
         self.assertEqual(rest.clocks["drive"], 0)

@@ -1,6 +1,7 @@
 import math
 from bisect import bisect_left
 from dataclasses import dataclass
+from itertools import pairwise
 
 import requests
 from django.conf import settings
@@ -119,7 +120,7 @@ def _build_leg(osrm_leg):
         shape = decode_polyline(step["geometry"])
         if not points:
             points.append(shape[0])
-        lengths = [haversine_miles(a, b) for a, b in zip(shape, shape[1:])]
+        lengths = [haversine_miles(a, b) for a, b in pairwise(shape)]
         shape_length = sum(lengths)
         if not shape_length:
             continue

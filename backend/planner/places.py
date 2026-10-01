@@ -2,6 +2,7 @@ import csv
 from collections import defaultdict
 from functools import lru_cache
 from pathlib import Path
+from typing import NamedTuple
 
 import requests
 from django.conf import settings
@@ -13,19 +14,28 @@ NORTH_AMERICA = "-168,14,-52,72"
 CITIES_FILE = Path(__file__).parent / "data" / "cities.csv"
 
 
-class PlaceSearchError(Exception):
-    pass
+class City(NamedTuple):
+    name: str
+    region: str
+    lat: float
+    lng: float
+    population: int
+
+    @property
+    def label(self):
+        return f"{self.name}, {self.region}"
 
 
 def search(query, limit=6):
+    """Suggest places for the search box, from Photon or the bundled city list if it is down."""
     params = {"q": query, "limit": limit + 4, "lang": "en", "bbox": NORTH_AMERICA}
     headers = {"User-Agent": settings.HTTP_USER_AGENT}
     try:
         response = requests.get(PHOTON_URL, params=params, headers=headers, timeout=8)
         response.raise_for_status()
         features = response.json()["features"]
-    except (requests.RequestException, ValueError, KeyError) as exc:
-        raise PlaceSearchError("Place search is not responding.") from exc
+    except (requests.RequestException, ValueError, KeyError):
+        return _search_cities(query, limit)
 
     results = {}
     for feature in features:
@@ -33,7 +43,9 @@ def search(query, limit=6):
         name, detail = _describe(feature["properties"])
         if name:
             label = f"{name}, {detail}" if detail else name
-            results.setdefault(label, {"label": label, "name": name, "detail": detail, "lat": lat, "lng": lng})
+            results.setdefault(
+                label, {"label": label, "name": name, "detail": detail, "lat": lat, "lng": lng}
+            )
     return list(results.values())[:limit]
 
 
@@ -50,13 +62,36 @@ def _describe(props):
     return name, ", ".join(detail) or props.get("country", "")
 
 
+def _search_cities(query, limit):
+    prefix = query.casefold()
+    matches = [city for city in _cities() if city.label.casefold().startswith(prefix)]
+    matches.sort(key=lambda city: -city.population)
+    return [
+        {"label": c.label, "name": c.name, "detail": c.region, "lat": c.lat, "lng": c.lng}
+        for c in matches[:limit]
+    ]
+
+
+@lru_cache(maxsize=1)
+def _cities():
+    with open(CITIES_FILE, encoding="utf-8", newline="") as f:
+        return [
+            City(
+                row["name"],
+                row["region"],
+                float(row["lat"]),
+                float(row["lng"]),
+                int(row["population"]),
+            )
+            for row in csv.DictReader(f)
+        ]
+
+
 @lru_cache(maxsize=1)
 def _city_grid():
     grid = defaultdict(list)
-    with open(CITIES_FILE, encoding="utf-8", newline="") as f:
-        for row in csv.DictReader(f):
-            lat, lng = float(row["lat"]), float(row["lng"])
-            grid[int(lat // 1), int(lng // 1)].append((lat, lng, f"{row['name']}, {row['region']}"))
+    for city in _cities():
+        grid[int(city.lat // 1), int(city.lng // 1)].append(city)
     return grid
 
 
@@ -72,4 +107,4 @@ def nearest_city(lat, lng):
     ]
     if not nearby:
         return f"{lat:.3f}, {lng:.3f}"
-    return min(nearby, key=lambda city: haversine_miles((lat, lng), city[:2]))[2]
+    return min(nearby, key=lambda city: haversine_miles((lat, lng), (city.lat, city.lng))).label

@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+import requests
 from django.test import SimpleTestCase
 from rest_framework.test import APIClient
 
@@ -54,7 +55,10 @@ class PlanTripApiTests(SimpleTestCase):
         del self.payload["pickup"]
         self.assertEqual(self.post().status_code, 400)
 
-    @patch("planner.trips.fetch_route", side_effect=NoRouteError("No drivable route connects these locations."))
+    @patch(
+        "planner.trips.fetch_route",
+        side_effect=NoRouteError("No drivable route connects these locations."),
+    )
     def test_reports_unroutable_trips(self, _):
         response = self.post()
         self.assertEqual(response.status_code, 422)
@@ -83,5 +87,20 @@ class PlaceSearchApiTests(SimpleTestCase):
         results = self.client.get("/api/places", {"q": "chicago"}).json()
         self.assertEqual(
             results,
-            [{"label": "Chicago, Illinois", "name": "Chicago", "detail": "Illinois", "lat": 41.87, "lng": -87.62}],
+            [
+                {
+                    "label": "Chicago, Illinois",
+                    "name": "Chicago",
+                    "detail": "Illinois",
+                    "lat": 41.87,
+                    "lng": -87.62,
+                }
+            ],
         )
+
+    @patch("planner.places.requests.get", side_effect=requests.ConnectionError)
+    def test_falls_back_to_the_city_list_when_photon_is_down(self, _):
+        results = self.client.get("/api/places", {"q": "dallas"}).json()
+        self.assertEqual(results[0]["label"], "Dallas, TX")
+        self.assertAlmostEqual(results[0]["lat"], 32.78, places=1)
+        self.assertTrue(all(place["name"].startswith("Dallas") for place in results))

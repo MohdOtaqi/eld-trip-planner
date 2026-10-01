@@ -1,0 +1,5 @@
+line-length = 100
+
+[lint]
+# Log times are naive wall-clock times at the home terminal, so the timezone rules do not apply.
+ignore = ["DTZ"]

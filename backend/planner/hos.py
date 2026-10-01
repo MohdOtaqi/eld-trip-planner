@@ -114,7 +114,17 @@ class TripPlanner:
             last.miles += miles
         else:
             self.events.append(
-                Event("drive", DRIVING, start, self.now, self.lat, self.lng, self.odometer, miles, clocks=clocks)
+                Event(
+                    "drive",
+                    DRIVING,
+                    start,
+                    self.now,
+                    self.lat,
+                    self.lng,
+                    self.odometer,
+                    miles,
+                    clocks=clocks,
+                )
             )
         self.lat, self.lng, self.odometer = lat, lng, odometer
         self.cycle += TICK

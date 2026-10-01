@@ -2,7 +2,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .places import PlaceSearchError, search
+from .places import search
 from .routing import NoRouteError, RoutingError
 from .serializers import TripRequestSerializer
 from .trips import plan_trip
@@ -11,12 +11,7 @@ from .trips import plan_trip
 class PlaceSearchView(APIView):
     def get(self, request):
         query = request.query_params.get("q", "").strip()
-        if len(query) < 2:
-            return Response([])
-        try:
-            return Response(search(query))
-        except PlaceSearchError as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
+        return Response(search(query) if len(query) >= 2 else [])
 
 
 class PlanTripView(APIView):
