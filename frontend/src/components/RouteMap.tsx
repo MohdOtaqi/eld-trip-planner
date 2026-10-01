@@ -1,8 +1,10 @@
 import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
 import { Truck } from 'lucide-react'
-import maplibregl, { type ExpressionSpecification, type GeoJSONSource } from 'maplibre-gl'
+import * as maplibregl from 'maplibre-gl'
+import type { ExpressionSpecification, GeoJSONSource } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { Stop, TripPlan } from '../lib/api'
@@ -10,12 +12,14 @@ import { formatDay, formatMiles, formatTime } from '../lib/format'
 import { decodePolyline, measureRoute, pointAt } from '../lib/polyline'
 import { describeStop } from '../lib/stops'
 
+maplibregl.setWorkerUrl(workerUrl)
+
 const STYLE = 'https://tiles.openfreemap.org/styles/dark'
 const LANE = '#f6c744'
 const HOME: [number, number] = [-97, 38]
 
 // The stock dark style is neutral grey. Shift it toward night blue and lift the highways.
-const TINT: [layer: string, property: string, value: string][] = [
+const TINT: [layer: string, property: 'background-color' | 'fill-color' | 'line-color', value: string][] = [
   ['background', 'background-color', '#1a2435'],
   ['water', 'fill-color', '#0b111b'],
   ['waterway', 'line-color', '#0b111b'],
