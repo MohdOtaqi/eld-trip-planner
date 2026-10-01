@@ -45,9 +45,9 @@ def _describe(props):
         context.append(props.get("country"))
     detail = []
     for part in context:
-        if part and part != name and part not in detail:
+        if part and part not in detail:
             detail.append(part)
-    return name, ", ".join(detail)
+    return name, ", ".join(detail) or props.get("country", "")
 
 
 @lru_cache(maxsize=1)
