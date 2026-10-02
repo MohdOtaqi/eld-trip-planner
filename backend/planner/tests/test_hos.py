@@ -1,3 +1,4 @@
+import random
 from datetime import datetime, timedelta
 
 from django.test import SimpleTestCase
@@ -57,7 +58,7 @@ class TripPlannerTests(SimpleTestCase):
                 self.assertLessEqual(since_break, hos.DRIVING_BEFORE_BREAK)
                 self.assertLessEqual(event.end - shift_start, timedelta(minutes=hos.DUTY_WINDOW))
                 self.assertLessEqual(cycle, hos.CYCLE_LIMIT)
-                self.assertLessEqual(since_fuel, hos.FUEL_RANGE_MILES)
+                self.assertLessEqual(since_fuel, hos.FUEL_RANGE_MILES + 1e-6)
 
     def test_short_trip_needs_no_breaks(self):
         events = plan(60, 180)
@@ -154,6 +155,23 @@ class TripPlannerTests(SimpleTestCase):
                 self.assertAlmostEqual(driven, to_pickup + to_dropoff, places=3)
                 self.assertEqual(kinds(events).count("pickup"), 1)
                 self.assertEqual(events[-1].kind, "dropoff")
+
+    def test_random_trips_stay_legal(self):
+        rng = random.Random(2026)
+        for _ in range(2000):
+            to_pickup = rng.choice([0, rng.uniform(0, 1500)])
+            to_dropoff = rng.uniform(0, 3500)
+            cycle_hours = rng.randrange(0, 281) / 4
+            departure = DEPARTURE + timedelta(minutes=15 * rng.randrange(0, 96 * 30))
+            planner = hos.TripPlanner(
+                straight_leg(to_pickup, mph=rng.uniform(25, 70)),
+                straight_leg(to_dropoff, mph=rng.uniform(25, 70)),
+                departure,
+                int(cycle_hours * 60),
+            )
+            events = planner.plan()
+            self.assert_legal(events, cycle_hours)
+            self.assertAlmostEqual(sum(e.miles for e in events), to_pickup + to_dropoff, places=3)
 
 
 class DailyLogTests(SimpleTestCase):
