@@ -158,7 +158,7 @@ class TripPlannerTests(SimpleTestCase):
 
     def test_random_trips_stay_legal(self):
         rng = random.Random(2026)
-        for _ in range(2000):
+        for _ in range(20000):
             to_pickup = rng.choice([0, rng.uniform(0, 1500)])
             to_dropoff = rng.uniform(0, 3500)
             cycle_hours = rng.randrange(0, 281) / 4
